@@ -1,10 +1,10 @@
-import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional, Tuple
 
 if TYPE_CHECKING:
     from dankmemer.client import DankMemerClient
 
+from .base import CachedRoute
 from .baits import BaitsFilter, Bait
 from .buckets import BucketsFilter, Bucket
 from .creatures import CreaturesFilter, Creature
@@ -84,7 +84,7 @@ class AllFilter:
         self.limit = limit
 
 
-class AllRoute:
+class AllRoute(CachedRoute[Dict[str, Any]]):
     """
     Represents the /all endpoint.
 
@@ -92,26 +92,12 @@ class AllRoute:
     from the API and applies filters from an AllFilter to each section.
     """
 
-    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta) -> None:
-        self.client = client
-        self.cache_ttl = cache_ttl
-        self._cache: Optional[Dict[str, Any]] = None
-        self._last_update: Optional[datetime] = None
-        self._lock = asyncio.Lock()
+    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta | None) -> None:
+        super().__init__(client, cache_ttl)
 
     async def _fetch(self) -> Dict[str, Any]:
         raw_data: Dict[str, Any] = await self.client.request("all")
-        self._cache = raw_data
-        self._last_update = datetime.now(timezone.utc)
-        return raw_data
-
-    async def _get_data(self) -> Dict[str, Any]:
-        async with self._lock:
-            if (self._cache is None) or (
-                datetime.now(timezone.utc) - self._last_update > self.cache_ttl
-            ):
-                return await self._fetch()
-            return self._cache
+        return self._store_cache(raw_data)
 
     async def query(self, all_filter: Optional[AllFilter] = None) -> Dict[str, Any]:
         """
@@ -164,7 +150,11 @@ class AllRoute:
         if all_filter and all_filter.skills:
             result["skills"] = all_filter.skills.apply(result["skills"])
 
-        result["skillsdata"] = [SkillData.from_dict(entry) for entry in data.get("skillsdata", [])]
+        skillsdata = data.get("skillsdata", {})
+        if isinstance(skillsdata, list):
+            result["skillsdata"] = [SkillData.from_dict(entry) for entry in skillsdata]
+        else:
+            result["skillsdata"] = [SkillData.from_dict(entry) for entry in skillsdata.values()]
         if all_filter and all_filter.skillsdata:
             result["skillsdata"] = all_filter.skillsdata.apply(result["skillsdata"])
 

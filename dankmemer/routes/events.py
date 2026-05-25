@@ -1,12 +1,10 @@
-import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
 
-from rapidfuzz import fuzz
-
 from dankmemer.types import StringFilterType, StringType
-from dankmemer.utils import IN, DotDict, Fuzzy, parse_iso_timestamp
+from dankmemer.routes.base import CachedRoute, matches_string
+from dankmemer.utils import IN as IN, DotDict, Fuzzy as Fuzzy, parse_iso_timestamp
 
 if TYPE_CHECKING:
     from dankmemer.client import DankMemerClient
@@ -125,45 +123,24 @@ class EventsFilter:
         return results
 
     def _matches_field(self, field_value: str, filter_val: StringFilterType) -> bool:
-        if not field_value:
-            return False
-        if isinstance(filter_val, Fuzzy):
-            score: float = fuzz.ratio(field_value.lower(), filter_val.value.lower())
-            return score >= filter_val.cutoff
-        elif isinstance(filter_val, IN):
-            return any(p.lower() in field_value.lower() for p in filter_val.patterns)
-        return field_value.lower() == filter_val.lower()
+        return matches_string(field_value, filter_val)
 
 
-class EventsRoute:
+class EventsRoute(CachedRoute[Dict[str, Event]]):
     """
     Represents the /events endpoint, converting raw API data into Event objects and
     providing route-specific filtering.
     """
 
-    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta) -> None:
-        self.client: "DankMemerClient" = client
-        self.cache_ttl: timedelta = cache_ttl
-        self._cache: Optional[Dict[str, Event]] = None
-        self._last_update: Optional[datetime] = None
-        self._lock: asyncio.Lock = asyncio.Lock()
+    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta | None) -> None:
+        super().__init__(client, cache_ttl)
 
     async def _fetch(self) -> Dict[str, Event]:
         raw_data: Dict[str, Any] = await self.client.request("events")
         processed: Dict[str, Event] = {}
         for key, value in raw_data.items():
             processed[key] = Event.from_dict(value)
-        self._cache = processed
-        self._last_update = datetime.now(timezone.utc)
-        return processed
-
-    async def _get_data(self) -> Dict[str, Event]:
-        async with self._lock:
-            if (self._cache is None) or (
-                datetime.now(timezone.utc) - self._last_update > self.cache_ttl
-            ):
-                return await self._fetch()
-            return self._cache
+        return self._store_cache(processed)
 
     async def query(self, events_filter: Optional[EventsFilter] = None) -> List[Event]:
         """

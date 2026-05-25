@@ -1,9 +1,6 @@
-import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
-
-from rapidfuzz import fuzz
 
 from dankmemer.types import (
     IntegerType,
@@ -11,7 +8,15 @@ from dankmemer.types import (
     StringFilterType,
     StringType,
 )
-from dankmemer.utils import IN, Above, Below, DotDict, Fuzzy, Range
+from dankmemer.routes.base import CachedRoute, matches_list, matches_numeric, matches_string
+from dankmemer.utils import (
+    IN as IN,
+    Above as Above,
+    Below as Below,
+    DotDict,
+    Fuzzy as Fuzzy,
+    Range as Range,
+)
 
 if TYPE_CHECKING:
     from dankmemer.client import DankMemerClient
@@ -160,44 +165,10 @@ class NPCsFilter:
         return results
 
     def _matches_field(self, field_value: str, filter_val: StringFilterType) -> bool:
-        if not field_value:
-            return False
-        if isinstance(filter_val, Fuzzy):
-            score: float = fuzz.ratio(field_value.lower(), filter_val.value.lower())
-            return score >= filter_val.cutoff
-        elif isinstance(filter_val, IN):
-            return any(v.lower() in field_value.lower() for v in filter_val.patterns)
-        return field_value.lower() == filter_val.lower()
+        return matches_string(field_value, filter_val)
 
     def _matches_numeric(self, field_value: Any, filter_val: NumericFilterType) -> bool:
-        if field_value is None:
-            return False
-        if isinstance(filter_val, tuple):
-            low, high = filter_val
-            try:
-                numeric_value = float(field_value)
-            except (ValueError, TypeError):
-                return False
-            return low <= numeric_value <= high
-        elif isinstance(filter_val, Above):
-            try:
-                return float(field_value) > filter_val.threshold
-            except (ValueError, TypeError):
-                return False
-        elif isinstance(filter_val, Below):
-            try:
-                return float(field_value) < filter_val.threshold
-            except (ValueError, TypeError):
-                return False
-        elif isinstance(filter_val, Range):
-            try:
-                return filter_val.low <= float(field_value) <= filter_val.high
-            except (ValueError, TypeError):
-                return False
-        try:
-            return float(field_value) == float(filter_val)
-        except (ValueError, TypeError):
-            return False
+        return matches_numeric(field_value, filter_val)
 
     def _matches_list(
         self, field_list: List[Any], filter_val: StringFilterType
@@ -206,26 +177,17 @@ class NPCsFilter:
         For list fields (e.g. locations), if any element in the list matches the filter criterion,
         we consider it a match.
         """
-        for element in field_list:
-            if isinstance(element, str) and self._matches_field(element, filter_val):
-                return True
-            if element == filter_val:
-                return True
-        return False
+        return matches_list(field_list, filter_val)
 
 
-class NPCsRoute:
+class NPCsRoute(CachedRoute[Dict[str, NPC]]):
     """
     Represents the /npcs endpoint, converting raw API data into Python objects and
     providing route-specific filtering.
     """
 
-    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta) -> None:
-        self.client: "DankMemerClient" = client
-        self.cache_ttl: timedelta = cache_ttl
-        self._cache: Optional[Dict[str, NPC]] = None
-        self._last_update: Optional[datetime] = None
-        self._lock: asyncio.Lock = asyncio.Lock()
+    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta | None) -> None:
+        super().__init__(client, cache_ttl)
 
     async def _fetch(self) -> Dict[str, NPC]:
         raw_data: Dict[str, Any] = await self.client.request("npcs")
@@ -233,17 +195,7 @@ class NPCsRoute:
         for key, value in raw_data.items():
             npc = NPC.from_dict(key, value)
             processed[npc.id] = npc
-        self._cache = processed
-        self._last_update = datetime.now(timezone.utc)
-        return processed
-
-    async def _get_data(self) -> Dict[str, NPC]:
-        async with self._lock:
-            if (self._cache is None) or (
-                datetime.now(timezone.utc) - self._last_update > self.cache_ttl
-            ):
-                return await self._fetch()
-            return self._cache
+        return self._store_cache(processed)
 
     async def query(self, npc_filter: Optional[NPCsFilter] = None) -> List[NPC]:
         """

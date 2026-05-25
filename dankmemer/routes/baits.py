@@ -1,9 +1,6 @@
-import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
-
-from rapidfuzz import fuzz
 
 from dankmemer.types import (
     BooleanType,
@@ -12,7 +9,15 @@ from dankmemer.types import (
     StringFilterType,
     StringType,
 )
-from dankmemer.utils import IN, Above, Below, DotDict, Fuzzy, Range
+from dankmemer.routes.base import CachedRoute, matches_numeric, matches_string
+from dankmemer.utils import (
+    IN as IN,
+    Above as Above,
+    Below as Below,
+    DotDict,
+    Fuzzy as Fuzzy,
+    Range as Range,
+)
 
 if TYPE_CHECKING:
     from dankmemer.client import DankMemerClient
@@ -151,68 +156,27 @@ class BaitsFilter:
         return results
 
     def _matches_field(self, field_value: str, filter_val: StringFilterType) -> bool:
-        if not field_value:
-            return False
-        if isinstance(filter_val, Fuzzy):
-            score: float = fuzz.ratio(field_value.lower(), filter_val.value.lower())
-            return score >= filter_val.cutoff
-        elif isinstance(filter_val, IN):
-            return any(p.lower() in field_value.lower() for p in filter_val.patterns)
-        return field_value.lower() == filter_val.lower()
+        return matches_string(field_value, filter_val)
 
     def _matches_numeric(self, field_value: Any, filter_val: NumericFilterType) -> bool:
-        if field_value is None:
-            return False
-        try:
-            numeric_value = float(field_value)
-        except (ValueError, TypeError):
-            return False
-
-        if isinstance(filter_val, tuple):
-            low, high = filter_val
-            return low <= numeric_value <= high
-        elif isinstance(filter_val, Above):
-            return numeric_value > filter_val.threshold
-        elif isinstance(filter_val, Below):
-            return numeric_value < filter_val.threshold
-        elif isinstance(filter_val, Range):
-            return filter_val.low <= numeric_value <= filter_val.high
-        else:
-            try:
-                return numeric_value == float(filter_val)
-            except (ValueError, TypeError):
-                return False
+        return matches_numeric(field_value, filter_val)
 
 
-class BaitsRoute:
+class BaitsRoute(CachedRoute[Dict[str, Bait]]):
     """
     Represents the /baits endpoint, converting raw API data into Bait objects and
     providing route-specific filtering.
     """
 
-    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta) -> None:
-        self.client: "DankMemerClient" = client
-        self.cache_ttl: timedelta = cache_ttl
-        self._cache: Optional[Dict[str, Bait]] = None
-        self._last_update: Optional[datetime] = None
-        self._lock: asyncio.Lock = asyncio.Lock()
+    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta | None) -> None:
+        super().__init__(client, cache_ttl)
 
     async def _fetch(self) -> Dict[str, Bait]:
         raw_data: Dict[str, Any] = await self.client.request("baits")
         processed: Dict[str, Bait] = {}
         for key, value in raw_data.items():
             processed[key] = Bait.from_dict(value)
-        self._cache = processed
-        self._last_update = datetime.now(timezone.utc)
-        return processed
-
-    async def _get_data(self) -> Dict[str, Bait]:
-        async with self._lock:
-            if (self._cache is None) or (
-                datetime.now(timezone.utc) - self._last_update > self.cache_ttl
-            ):
-                return await self._fetch()
-            return self._cache
+        return self._store_cache(processed)
 
     async def query(self, bait_filter: Optional[BaitsFilter] = None) -> List[Bait]:
         """

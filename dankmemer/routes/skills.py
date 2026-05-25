@@ -1,16 +1,20 @@
-import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, Union
-
-from rapidfuzz import fuzz
 
 from dankmemer.types import (
     IntegerType,
     NumericFilterType,
     StringFilterType,
 )
-from dankmemer.utils import IN, Above, Below, Fuzzy, Range
+from dankmemer.routes.base import CachedRoute, matches_numeric, matches_string
+from dankmemer.utils import (
+    IN as IN,
+    Above as Above,
+    Below as Below,
+    Fuzzy as Fuzzy,
+    Range as Range,
+)
 
 if TYPE_CHECKING:
     from dankmemer.client import DankMemerClient
@@ -87,59 +91,29 @@ class SkillsFilter:
         return results
 
     def _matches_field(self, field_value: str, filter_val: StringFilterType) -> bool:
-        if not field_value:
-            return False
-        if isinstance(filter_val, Fuzzy):
-            score: float = fuzz.ratio(field_value.lower(), filter_val.value.lower())
-            return score >= filter_val.cutoff
-        elif isinstance(filter_val, IN):
-            return any(p.lower() in field_value.lower() for p in filter_val.patterns)
-        return field_value.lower() == filter_val.lower()  # type: ignore
+        return matches_string(field_value, filter_val)
 
     def _matches_numeric(
         self, field_value: Union[int, float], filter_val: NumericFilterType
     ) -> bool:
-        if isinstance(filter_val, tuple):
-            low, high = filter_val
-            return low <= field_value <= high
-        elif isinstance(filter_val, Above):
-            return field_value > filter_val.threshold
-        elif isinstance(filter_val, Below):
-            return field_value < filter_val.threshold
-        elif isinstance(filter_val, Range):
-            return filter_val.low <= field_value <= filter_val.high
-        return field_value == filter_val
+        return matches_numeric(field_value, filter_val)
 
 
-class SkillsRoute:
+class SkillsRoute(CachedRoute[Dict[str, Skill]]):
     """
     Represents the /skills endpoint, converting raw API data into Skill objects and
     providing filtering functionality.
     """
 
-    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta) -> None:
-        self.client: "DankMemerClient" = client
-        self.cache_ttl: timedelta = cache_ttl
-        self._cache: Optional[Dict[str, Skill]] = None
-        self._last_update: Optional[datetime] = None
-        self._lock: asyncio.Lock = asyncio.Lock()
+    def __init__(self, client: "DankMemerClient", cache_ttl: timedelta | None) -> None:
+        super().__init__(client, cache_ttl)
 
     async def _fetch(self) -> Dict[str, Skill]:
         raw_data: Dict[str, Any] = await self.client.request("skills")
         processed: Dict[str, Skill] = {}
         for key, value in raw_data.items():
             processed[key] = Skill.from_dict(value)
-        self._cache = processed
-        self._last_update = datetime.now(timezone.utc)
-        return processed
-
-    async def _get_data(self) -> Dict[str, Skill]:
-        async with self._lock:
-            if self._cache is None or (
-                datetime.now(timezone.utc) - self._last_update > self.cache_ttl
-            ):
-                return await self._fetch()
-            return self._cache
+        return self._store_cache(processed)
 
     async def query(self, skill_filter: Optional[SkillsFilter] = None) -> List[Skill]:
         """
