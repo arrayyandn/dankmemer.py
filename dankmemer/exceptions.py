@@ -5,9 +5,28 @@ class DankMemerException(Exception):
 
 class DankMemerHTTPException(DankMemerException):
     """Base exception for HTTP errors from Dank Alert's API."""
-    def __init__(self, message: str, status_code: int = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        route: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.route = route
+
+
+class DankMemerConnectionException(DankMemerException):
+    """Exception raised when the client cannot reach the API."""
+
+    def __init__(self, message: str, route: str | None = None) -> None:
+        super().__init__(message)
+        self.route = route
+
+
+class DankMemerResponseException(DankMemerHTTPException):
+    """Exception raised when the API response cannot be decoded."""
+    pass
 
 
 class NotFoundException(DankMemerHTTPException):
