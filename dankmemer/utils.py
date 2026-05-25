@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 from datetime import datetime
 
 class Fuzzy:
@@ -48,7 +48,7 @@ class Above:
     Example:
         netValue = Above(10000)
     """
-    def __init__(self, threshold: Union[int, float]) -> None:
+    def __init__(self, threshold: int | float) -> None:
         self.threshold = threshold
 
     def __repr__(self) -> str:
@@ -64,7 +64,7 @@ class Below:
     Example:
         netValue = Below(100000)
     """
-    def __init__(self, threshold: Union[int, float]) -> None:
+    def __init__(self, threshold: int | float) -> None:
         self.threshold = threshold
 
     def __repr__(self) -> str:
@@ -80,7 +80,7 @@ class Range:
     Example:
         netValue = Range(100, 100000)
     """
-    def __init__(self, low: Union[int, float], high: Union[int, float]) -> None:
+    def __init__(self, low: int | float, high: int | float) -> None:
         self.low = low
         self.high = high
 

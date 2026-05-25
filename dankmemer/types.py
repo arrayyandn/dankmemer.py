@@ -1,23 +1,23 @@
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Any
+
 from .utils import Fuzzy, IN, Above, Below, Range
 
-StringFilterType = Optional[Union[str, Fuzzy, IN]]
+StringFilterType = str | Fuzzy | IN | None
 
-NumericFilterType = Optional[
-    Union[
-        int,
-        float,
-        Tuple[Union[int, float], Union[int, float]],
-        Above,
-        Below,
-        Range
-    ]
-]
+NumericFilterType = (
+    int
+    | float
+    | tuple[int | float, int | float]
+    | Above
+    | Below
+    | Range
+    | None
+)
 
-StringType = Optional[str]
+StringType = str | None
 
-BooleanType = Optional[bool]
+BooleanType = bool | None
 
-IntegerType = Optional[int]
+IntegerType = int | None
 
-DictType = Optional[Dict[str, Any]]
+DictType = dict[str, Any] | None
