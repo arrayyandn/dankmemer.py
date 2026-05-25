@@ -7,11 +7,11 @@ dankmemer.py Documentation
 ==========================
 
 Welcome to the documentation for dankmemer.py, a lightweight asynchronous Python wrapper for the DankAlert API.
-This alpha release currently supports the Items and NPC routes. Future releases will expand the API coverage.
+Version ``1.0.0rc2`` supports the current DankAlert route groups exposed by the package.
 
 Installation
 ------------
-You can install dankmemer.py via pip:
+Python 3.11 or newer is required. You can install dankmemer.py via pip:
 
 .. code-block:: bash
 
@@ -21,7 +21,11 @@ You can install dankmemer.py via pip:
 Features
 --------
 - Built-in caching with configurable TTL
+- Cache clearing and cache state introspection
+- Configurable retries for rate limits, temporary server errors, timeouts, and connection errors
+- Configurable logging modes for coloured package logs, silent operation, inherited logging, or a custom logger
 - Powerful filtering (exact, fuzzy, membership [IN], numeric range, Above/Below/Range)
+- Stream metadata access through ``client.stream``
 - Anti-rate-limit protection
 
 .. toctree::

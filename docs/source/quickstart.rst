@@ -2,6 +2,7 @@ Quick Start
 ===========
 
 Below is a minimal example to help you get started with dankmemer.py.
+Python 3.11 or newer is required.
 
 .. code-block:: python
 
@@ -21,6 +22,26 @@ Below is a minimal example to help you get started with dankmemer.py.
     asyncio.run(main())
 
 This example shows the basic usage of DankMemerClient and how to perform queries.
+
+Cache and Retry Configuration
+-----------------------------
+
+.. code-block:: python
+
+    import asyncio
+    from dankmemer import DankMemerClient
+
+    async def main():
+        async with DankMemerClient(
+            cache_ttl_hours=0,
+            retry_attempts=2,
+            retry_backoff=0.5,
+        ) as client:
+            items = await client.items.query()
+            print(len(items))
+            print(client.items.cache_info())
+
+    asyncio.run(main())
 
 Using Multiple Filters
 ------------------------------------------

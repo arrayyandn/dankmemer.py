@@ -18,6 +18,11 @@ The following route classes provide access to specific API endpoints.
 .. automodule:: dankmemer.routes.baits
     :members: BaitsRoute, Bait, BaitsFilter
 
+**Buckets Route and Filter**
+
+.. automodule:: dankmemer.routes.buckets
+    :members: BucketsRoute, Bucket, BucketsFilter
+
 **Creatures Route and Filter**
 
 .. automodule:: dankmemer.routes.creatures
@@ -53,6 +58,11 @@ The following route classes provide access to specific API endpoints.
 
 .. automodule:: dankmemer.routes.skillsdata
     :members: SkillDataRoute, SkillData, SkillDataFilter
+
+**Stream Route**
+
+.. automodule:: dankmemer.routes.stream
+    :members: StreamRoute, StreamData, TrendingGame
 
 **Tanks Route and Filter**
 
