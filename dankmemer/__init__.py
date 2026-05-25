@@ -1,4 +1,4 @@
-__version__ = "1.0.0rc1"
+__version__ = "1.0.0rc2"
 
 from .client import DankMemerClient
 from .routes import (
@@ -24,10 +24,12 @@ from .routes import (
     SkillsFilter,
     SkillData,
     SkillDataFilter,
+    StreamData,
     Tank,
     TanksFilter,
     Tool,
     ToolsFilter,
+    TrendingGame,
     AllFilter
 )
 from .utils import IN, Above, Below, DotDict, Fuzzy, Range
@@ -62,9 +64,11 @@ __all__ = [
     "SkillsFilter",
     "SkillData",
     "SkillDataFilter",
+    "StreamData",
     "Tank",
     "TanksFilter",
     "Tool",
     "ToolsFilter",
+    "TrendingGame",
     "AllFilter"
 ]
