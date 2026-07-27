@@ -6,12 +6,37 @@ dankmemer.py
 objects, built-in caching, route-level filtering, and optional client-side
 rate-limit protection.
 
+`Read the full documentation <https://dankmemerpy.readthedocs.io/en/latest/>`_.
+
+Important Service and Rules Notice
+----------------------------------
+
+.. warning::
+
+   On 25 July 2026, Dank Memer announced Rule 13, `External Bots and
+   Services <https://dankmemer.lol/rules>`_. The rule prohibits developing or
+   using services that scrape Dank Memer's API, website, or Discord responses,
+   and is due to be enforced from 1 September 2026.
+
+   The third-party DankAlert API used by this package has shut down. Only its
+   ``/items`` endpoint remains available through a Cloudflare TTL cache, so its
+   data may be outdated; every other route is unavailable. Any release of this
+   package that still relies on DankAlert must not be used from 1 September
+   2026.
+
+   If documentation for Dank Memer's `official API
+   <https://dankmemer.lol/api>`_ becomes available, the intention is to migrate
+   this package to use only that API and support its available features. A
+   successfully migrated release would no longer rely on the prohibited
+   third-party service. This migration is not guaranteed because the maintainer
+   must first be approved for API access in order to test, develop, and complete
+   it. No release date has been announced beyond the stated Q4 2026 target.
+
 Release Status
 --------------
 
 This package is currently prepared as ``1.0.0rc2``. The public API is usable
-across the supported DankAlert route groups, but small fixes may still land
-before a stable ``1.0.0`` release.
+as described below, subject to the service and rules notice above.
 
 Installation
 ------------
@@ -28,7 +53,9 @@ Both package aliases are available:
 Supported Routes
 ----------------
 
-The client currently exposes these route groups:
+The client exposes these route groups, but the underlying DankAlert API has
+shut down. At present, only ``client.items`` can still return data, and that
+data comes from a Cloudflare TTL cache and may be inaccurate:
 
 - ``client.all``
 - ``client.baits``
@@ -178,6 +205,6 @@ Documentation
 
 Full documentation is under development and will be published at:
 
-https://dankmemerpy.readthedocs.io
+https://dankmemerpy.readthedocs.io/en/latest/
 
 Issues and contributions are welcome on GitHub.
