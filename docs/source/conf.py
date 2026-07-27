@@ -5,9 +5,12 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-import os
 import sys
-sys.path.insert(0, os.path.abspath("../.."))
+from pathlib import Path
+
+# Resolve the checkout root from this file rather than from Sphinx's working
+# directory, which differs between local and Read the Docs builds.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 project = 'dankmemer.py'
