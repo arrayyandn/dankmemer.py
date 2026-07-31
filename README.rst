@@ -1,10 +1,10 @@
 dankmemer.py
 ============
 
-``dankmemer.py`` is a lightweight asynchronous Python wrapper for the
-`DankAlert API <https://api.dankalert.xyz/dank>`_. It provides typed response
-objects, built-in caching, route-level filtering, and optional client-side
-rate-limit protection.
+``dankmemer.py`` is a lightweight asynchronous Python wrapper for Dank Memer
+item data. Version ``1.0.0rc3`` uses the limited `Gwapes items API
+<https://api.gwapes.com/items>`_ and provides typed response objects, built-in
+caching, filtering, and optional client-side rate-limit protection.
 
 `Read the full documentation <https://dankmemerpy.readthedocs.io/en/latest/>`_.
 
@@ -18,11 +18,9 @@ Important Service and Rules Notice
    using services that scrape Dank Memer's API, website, or Discord responses,
    and is due to be enforced from 1 September 2026.
 
-   The third-party DankAlert API used by this package has shut down. Only its
-   ``/items`` endpoint remains available through a Cloudflare TTL cache, so its
-   data may be outdated; every other route is unavailable. Any release of this
-   package that still relies on DankAlert must not be used from 1 September
-   2026.
+   The third-party DankAlert API previously used by this package has shut down
+   permanently, including its ``/items`` endpoint. Version ``1.0.0rc3`` no
+   longer relies on DankAlert and supports only item data through Gwapes.
 
    If documentation for Dank Memer's `official API
    <https://dankmemer.lol/api>`_ becomes available, the intention is to migrate
@@ -35,8 +33,8 @@ Important Service and Rules Notice
 Release Status
 --------------
 
-This package is currently prepared as ``1.0.0rc2``. The public API is usable
-as described below, subject to the service and rules notice above.
+This package is currently prepared as ``1.0.0rc3``. With the default client,
+only ``client.items`` is supported.
 
 Installation
 ------------
@@ -53,9 +51,36 @@ Both package aliases are available:
 Supported Routes
 ----------------
 
-The client exposes these route groups, but the underlying DankAlert API has
-shut down. At present, only ``client.items`` can still return data, and that
-data comes from a Cloudflare TTL cache and may be inaccurate:
+The default client supports only ``client.items`` through Gwapes. The existing
+route attributes remain present for API compatibility, but calling any other
+route raises ``UnsupportedRouteException`` before an HTTP request is made.
+
+Callers that explicitly provide a non-Gwapes ``base_url`` retain the legacy
+route request behaviour for compatible custom servers. Those servers are not
+officially supported or guaranteed by this package.
+
+Gwapes supplies fewer fields than the former DankAlert endpoint:
+
+.. list-table:: Item field availability
+   :header-rows: 1
+
+   * - Existing ``Item`` attribute
+     - Gwapes source
+   * - ``name``
+     - ``name``
+   * - ``imageURL``
+     - ``attachment``
+   * - ``marketValue``
+     - ``value``
+   * - ``netValue``
+     - ``net_value``
+   * - ``rarity`` and ``type``
+     - Split from the combined Gwapes ``type`` value
+   * - ``id``, ``details``, ``emoji``, ``flavor``, ``hasUse``, ``itemKey``,
+       ``skins``, ``tags``, and ``value``
+     - Unavailable and returned as ``None``
+
+The following legacy route attributes are unavailable with the default client:
 
 - ``client.all``
 - ``client.baits``
@@ -63,7 +88,6 @@ data comes from a Cloudflare TTL cache and may be inaccurate:
 - ``client.creatures``
 - ``client.decorations``
 - ``client.events``
-- ``client.items``
 - ``client.locations``
 - ``client.npcs``
 - ``client.seasons``
@@ -91,7 +115,7 @@ Quick Start
 .. code-block:: python
 
     import asyncio
-    from dankmemer import DankMemerClient, Fuzzy, IN, ItemsFilter, NPCsFilter
+    from dankmemer import DankMemerClient, Fuzzy, ItemsFilter
 
     async def main():
         async with DankMemerClient() as client:
@@ -102,24 +126,6 @@ Quick Start
                 ItemsFilter(name=Fuzzy("trash", cutoff=80))
             )
             print([item.name for item in filtered_items])
-
-            npcs = await client.npcs.query(NPCsFilter(name=IN("chad")))
-            print([npc.name for npc in npcs])
-
-    asyncio.run(main())
-
-Stream Example
---------------
-
-.. code-block:: python
-
-    import asyncio
-    from dankmemer import DankMemerClient
-
-    async def main():
-        async with DankMemerClient() as client:
-            stream = await client.stream.query()
-            print(stream.trending_game.name)
 
     asyncio.run(main())
 

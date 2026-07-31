@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 project = 'dankmemer.py'
 copyright = '2025, RayyanW786'
 author = 'RayyanW786'
-release = '1.0.0rc2'
+release = '1.0.0rc3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

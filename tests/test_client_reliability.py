@@ -10,6 +10,8 @@ from dankmemer.exceptions import (
     RateLimitException,
 )
 
+CUSTOM_BASE_URL = "https://example.test/dank"
+
 
 class DummyResponse:
     def __init__(self, status, payload=None, headers=None, json_error=None):
@@ -77,6 +79,7 @@ async def test_retries_temporary_server_error():
         ]
     )
     client = DankMemerClient(
+        base_url=CUSTOM_BASE_URL,
         session=session,
         useAntirateLimit=False,
         retry_attempts=2,
@@ -101,6 +104,7 @@ async def test_retries_rate_limit_with_retry_after():
         ]
     )
     client = DankMemerClient(
+        base_url=CUSTOM_BASE_URL,
         session=session,
         useAntirateLimit=False,
         retry_attempts=2,
@@ -119,6 +123,7 @@ async def test_retries_rate_limit_with_retry_after():
 async def test_rate_limit_can_skip_retry():
     session = DummySession([DummyResponse(429, headers={"Retry-After": "0"})])
     client = DankMemerClient(
+        base_url=CUSTOM_BASE_URL,
         session=session,
         useAntirateLimit=False,
         retry_attempts=2,
@@ -138,6 +143,7 @@ async def test_rate_limit_can_skip_retry():
 async def test_connection_errors_are_wrapped():
     session = DummySession([aiohttp.ClientConnectionError("offline")])
     client = DankMemerClient(
+        base_url=CUSTOM_BASE_URL,
         session=session,
         useAntirateLimit=False,
         retry_attempts=1,
@@ -154,6 +160,7 @@ async def test_connection_errors_are_wrapped():
 async def test_invalid_json_is_wrapped():
     session = DummySession([DummyResponse(200, json_error=ValueError("bad json"))])
     client = DankMemerClient(
+        base_url=CUSTOM_BASE_URL,
         session=session,
         useAntirateLimit=False,
         logging_mode="null",

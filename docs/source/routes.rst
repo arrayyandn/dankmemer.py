@@ -3,7 +3,20 @@ Routes
 
 The following route classes provide access to specific API endpoints.
 
+.. important::
+
+    With the default Gwapes API, only ``ItemsRoute`` is supported. Every other
+    route below is retained for API compatibility and raises
+    :class:`dankmemer.exceptions.UnsupportedRouteException` before making an
+    HTTP request. Explicit non-Gwapes ``base_url`` clients retain the legacy
+    behaviour for compatible custom servers.
+
 **Items Route and Filter**
+
+Gwapes provides ``name``, ``attachment``, ``value``, ``net_value``, and a
+combined ``type``. These map to ``name``, ``imageURL``, ``marketValue``,
+``netValue``, ``rarity``, and ``type``. All other legacy ``Item`` fields are
+``None``.
 
 .. automodule:: dankmemer.routes.items
     :members: ItemsRoute, Item, ItemsFilter

@@ -3,8 +3,25 @@ class DankMemerException(Exception):
     pass
 
 
+class UnsupportedRouteException(DankMemerException):
+    """Exception raised for routes unavailable through the default Gwapes API."""
+
+    supported_routes = ("items",)
+    rule_url = "https://dankmemer.lol/rules"
+
+    def __init__(self, route: str) -> None:
+        self.route = route
+        super().__init__(
+            f"Route {route!r} is unavailable because DankAlert is permanently "
+            "offline. dankmemer.py currently supports only the 'items' route "
+            "through the limited-field Gwapes API. Dank Memer Rule 13 restricts "
+            "external bots and services that scrape Dank Memer data; review "
+            f"{self.rule_url}."
+        )
+
+
 class DankMemerHTTPException(DankMemerException):
-    """Base exception for HTTP errors from Dank Alert's API."""
+    """Base exception for errors returned by an HTTP data source."""
     def __init__(
         self,
         message: str,

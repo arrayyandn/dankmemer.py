@@ -1,8 +1,13 @@
 DankMemerClient
 ===============
 
-The DankMemerClient class manages asynchronous access to the DankAlert API,
-including caching and rate-limit protection.
+The DankMemerClient class manages asynchronous access to the Gwapes items API,
+including caching and rate-limit protection. The default API supports only
+``client.items``. Other routes raise
+``dankmemer.exceptions.UnsupportedRouteException`` before an HTTP request.
+
+An explicit non-Gwapes ``base_url`` preserves legacy request behaviour for a
+compatible custom server, although such servers are not officially supported.
 
 Python 3.11 or newer is required.
 

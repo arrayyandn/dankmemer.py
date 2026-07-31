@@ -8,6 +8,7 @@ from typing import Any
 
 import aiohttp
 
+from dankmemer._gwapes import GWAPES_BASE_URL, adapt_gwapes_items
 from dankmemer.exceptions import (
     BadRequestException,
     DankMemerConnectionException,
@@ -16,6 +17,7 @@ from dankmemer.exceptions import (
     NotFoundException,
     RateLimitException,
     ServerErrorException,
+    UnsupportedRouteException,
 )
 from dankmemer.routes import (
     all,
@@ -125,12 +127,11 @@ def _configure_package_logger(logging_mode: str) -> logging.Logger:
 
 class DankMemerClient:
     """
-    An asynchronous client for accessing the DankAlert API.
+    An asynchronous client for accessing Dank Memer item data through Gwapes.
 
-    This client manages and provides access to various API endpoints
-    (e.g. items, npcs, skills, tools) along with built-in caching. In addition, it supports
-    anti-rate-limit behavior: when 'useAntirateLimit' is enabled (the default), the client
-    ensures that no more than 10 requests are made every 10 seconds.
+    The default API supports only items. Legacy route objects remain available for
+    callers using an explicit compatible ``base_url``. The client also provides
+    built-in caching and optional client-side rate-limit protection.
 
     Recommended usage:
       As a context manager:
@@ -150,7 +151,7 @@ class DankMemerClient:
         self,
         *,
         useAntirateLimit: bool = True,
-        base_url: str = "https://api.dankalert.xyz/dank",
+        base_url: str = GWAPES_BASE_URL,
         session: aiohttp.ClientSession | None = None,
         cache_ttl_hours: float | None = 24,
         retry_attempts: int = 5,
@@ -379,6 +380,10 @@ class DankMemerClient:
         :return: The parsed JSON response.
         """
 
+        using_gwapes = self.base_url == GWAPES_BASE_URL
+        if using_gwapes and route != "items":
+            raise UnsupportedRouteException(route)
+
         await self._wait_for_rate_limit()
         url = f"{self.base_url}/{route}"
 
@@ -400,7 +405,17 @@ class DankMemerClient:
                             retry_after=response.headers.get("Retry-After"),
                         )
                         continue
-                    return await self._handle_response(route, response)
+                    payload = await self._handle_response(route, response)
+                    if not using_gwapes:
+                        return payload
+                    try:
+                        return adapt_gwapes_items(payload)
+                    except (TypeError, ValueError) as exc:
+                        raise DankMemerResponseException(
+                            f"Invalid Gwapes response from route: {route}: {exc}",
+                            status_code=response.status,
+                            route=route,
+                        ) from exc
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
                 if attempt < self.retry_attempts:
