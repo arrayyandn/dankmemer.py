@@ -1,5 +1,7 @@
-recursive-include dankmemer *.py 
-include README.rst
-include LICENSE
-exclude tests/*
-recursive-exclude tests *
+include README.md CONTRIBUTING.md LICENSE .readthedocs.yaml
+graft docs
+graft examples
+graft tests
+prune docs/_build
+global-exclude .env .env.*
+global-exclude __pycache__ *.py[cod]

@@ -1,0 +1,12 @@
+.wy-nav-content {
+    max-width: 1050px;
+}
+
+.rst-content table.docutils td {
+    white-space: normal;
+}
+
+.rst-content .admonition p:last-child {
+    margin-bottom: 0;
+}
+

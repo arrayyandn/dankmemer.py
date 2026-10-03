@@ -1,6 +1,78 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "dankmemer.py"
+dynamic = ["version"]
+description = "Async Python SDK for the Dank Memer official API"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "RayyanW786"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+]
+dependencies = ["aiohttp>=3.13.0", "rapidfuzz>=3.14.1,<4"]
+
+[project.optional-dependencies]
+discord = ["discord.py>=2.4,<3"]
+sqlite = ["asqlite>=2.0,<3"]
+postgres = ["asyncpg>=0.31,<0.32"]
+docs = ["sphinx>=8,<10", "sphinx-rtd-theme>=3,<4"]
+dev = [
+    "asqlite>=2.0,<3",
+    "asyncpg-stubs>=0.31,<0.32",
+    "pytest>=8",
+    "pytest-asyncio>=1",
+    "mypy>=1.18",
+    "pyright>=1.1.400",
+    "ruff>=0.15",
+    "discord.py>=2.4,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/arrayyandn/dankmemer.py"
+Documentation = "https://dankmemerpy.readthedocs.io/en/latest/"
+Source = "https://github.com/arrayyandn/dankmemer.py"
+Issues = "https://github.com/arrayyandn/dankmemer.py/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "dankmemer._version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["dankmemer*"]
+
+[tool.setuptools.package-data]
+dankmemer = ["py.typed"]
+
+[tool.setuptools.exclude-package-data]
+"*" = [".env", ".env.*", "**/.env", "**/.env.*"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.pyright]
+include = ["dankmemer", "tests", "examples"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+
+[tool.mypy]
+files = ["dankmemer", "tests", "examples"]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]

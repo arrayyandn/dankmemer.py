@@ -1,0 +1,28 @@
+{
+  "source": "https://dankmemer.lol/dashboard/developers/docs",
+  "checked": "2026-10-02",
+  "responses": {
+    "/items": {"data": [{"id": 1, "key": "example", "name": "Example item", "type": "collectible", "value": 100, "sellValue": 50, "marketValue": 125, "flavor": "Item flavor", "details": "Usage details", "imageUrl": "https://example.com/image.png", "tags": ["collectible"], "skins": [{"id": "example-skin", "key": "example-skin", "name": "Example skin", "type": "item", "reference": 1, "rarity": "RARE", "imageUrl": "https://example.com/image.png", "metadata": null}]}], "nextCursor": null},
+    "/pets": {"data": [{"id": "example", "name": "Example pet", "imageUrl": "https://example.com/image.png", "cost": 1000, "stats": {"hunger": 10, "hygiene": 10, "energy": 10, "fun": 10}, "phrases": ["Hello"], "words": ["hello"], "color": "#ffffff", "friendlyTo": [], "hostileTo": [], "convertingPossible": false, "purchasable": true}], "nextCursor": null},
+    "/skins": {"data": [{"id": "example-skin", "key": "example-skin", "name": "Example skin", "type": "item", "reference": 1, "rarity": "RARE", "imageUrl": "https://example.com/image.png", "metadata": null}], "nextCursor": null},
+    "/commands": {"data": [{"id": "123456789012345678", "name": "example", "description": "Example command", "permissions": "0", "category": "currency", "hybrid": false, "dms": true, "cooldown": 5000, "donorCooldown": 3000, "options": [{"name": "target", "description": "Target user", "type": 6, "required": false}]}], "nextCursor": null},
+    "/fish?category=creatures": {"category": "creatures", "data": [{"id": "example", "name": "Example fish", "flavor": "Example text", "imageUrl": "https://example.com/image.png", "boss": false, "mythical": false, "rarity": "common", "time": {"start": 0, "end": 24}, "tools": {"example-tool": {"min": 1, "max": 5}}, "variants": [{"id": "gold", "name": "Gold", "type": "chroma", "imageUrl": "https://example.com/image.png"}], "locations": ["river"]}], "nextCursor": null},
+    "/fish?category=locations": {"category": "locations", "data": [{"id": "river", "name": "River", "imageUrl": "https://example.com/image.png", "creatures": ["example"], "npcs": [], "days": [1, 2], "disabled": false, "temporary": false, "type": "water"}], "nextCursor": null},
+    "/fish?category=npcs": {"category": "npcs", "data": [{"id": "example", "name": "Example NPC", "nickname": "Example", "bio": "NPC biography", "imageUrl": "https://example.com/image.png"}], "nextCursor": null},
+    "/fish?category=tools": {"category": "tools", "data": [{"id": "example", "name": "Example tool", "flavor": "Tool text", "usage": 10, "baits": true, "imageUrl": "https://example.com/image.png"}], "nextCursor": null},
+    "/fish?category=baits": {"category": "baits", "data": [{"id": "example", "name": "Example bait", "flavor": "Bait text", "usage": 1, "explanation": "Effect details", "imageUrl": "https://example.com/image.png"}], "nextCursor": null},
+    "/fish?category=buckets": {"category": "buckets", "data": [{"id": "example", "name": "Example bucket", "flavor": "Bucket text", "size": 10, "imageUrl": "https://example.com/image.png"}], "nextCursor": null},
+    "/fish?category=skills": {"category": "skills", "data": [{"id": "example-1", "skillId": "example", "tier": 1, "name": "Example I", "imageUrl": "https://example.com/image.png", "description": "Skill effect", "requirements": {"badge": null, "skill": null}, "category": "general"}], "nextCursor": null},
+    "/global-boosts": {"data": [{"type": "xp", "multiplier": 2, "endsAt": "2026-10-02T13:00:00.000Z"}]},
+    "/stream-trending-game": {"data": {"game": "Example game"}},
+    "/blogs": {"data": [{"id": "example", "title": "Example post", "description": "Post summary", "createdAt": "2026-10-02T12:00:00.000Z", "url": "https://dankmemer.lol/blogs/example"}], "nextCursor": null},
+    "/changelogs": {"data": [{"id": "example", "title": "Example change", "createdAt": "2026-10-02T12:00:00.000Z", "url": "https://dankmemer.lol/changelog/example"}], "nextCursor": null},
+    "/store-sales": {"data": [{"id": 1, "subjectID": 2, "subjectKind": "item", "startsAt": "2026-10-02T12:00:00.000Z", "endsAt": "2026-10-02T13:00:00.000Z", "price": 100, "name": "Example item", "url": "https://dankmemer.lol/store"}]},
+    "/store-daily-gifts": {"data": [{"id": "example", "name": "Daily gift", "category": "daily", "day": "2026-10-02T12:00:00.000Z", "expiresAt": "2026-10-02T13:00:00.000Z", "reward": {"type": "coins", "quantity": 1000}, "metadata": {"render": "1,000", "imageUrl": "https://example.com/image.png"}}]},
+    "/lottery": {"data": {"drawnAt": "2026-10-02T12:00:00.000Z", "winnings": 1000, "totalEntries": 50, "participants": 20, "winnerEntries": 2}},
+    "/merchant-trades": {"data": {"date": "2026-10-02T12:00:00.000Z", "generatedAt": "2026-10-02T12:00:00.000Z", "trades": [{"position": "left", "reward": {"type": "coins", "quantity": 1000}, "forReward": {"type": "item", "item": 1, "quantity": 1}, "max": 3}]}},
+    "/drops": {"data": [{"id": 1, "kind": null, "reward": {"type": "coins", "quantity": 1000}, "cost": null, "specialCost": null, "startsAt": "2026-10-02T12:00:00.000Z", "endsAt": "2026-10-02T13:00:00.000Z", "totalStock": 100, "limitPerUser": 1, "patreonOnly": false, "partnerOnly": false}]},
+    "/fishing-events": {"data": [{"id": "example", "typeId": "example", "name": "Example event", "description": "Event details", "imageUrl": "https://example.com/image.png", "premiumOnly": false, "startsAt": "2026-10-02T12:00:00.000Z", "endsAt": "2026-10-02T13:00:00.000Z"}]},
+    "/users/{user_id}/ban-status": true
+  }
+}

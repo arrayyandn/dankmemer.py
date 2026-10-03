@@ -1,23 +1,14 @@
-from typing import Any
+from __future__ import annotations
 
-from .utils import Fuzzy, IN, Above, Below, Range
+from collections.abc import Mapping
+from typing import TypeAlias
 
-StringFilterType = str | Fuzzy | IN | None
-
-NumericFilterType = (
-    int
+JSONValue: TypeAlias = (
+    str
+    | int
     | float
-    | tuple[int | float, int | float]
-    | Above
-    | Below
-    | Range
+    | bool
     | None
+    | tuple["JSONValue", ...]
+    | Mapping[str, "JSONValue"]
 )
-
-StringType = str | None
-
-BooleanType = bool | None
-
-IntegerType = int | None
-
-DictType = dict[str, Any] | None

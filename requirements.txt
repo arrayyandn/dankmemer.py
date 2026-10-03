@@ -1,4 +1,0 @@
-aiohttp
-rapidfuzz
-pytest
-pytest-asyncio

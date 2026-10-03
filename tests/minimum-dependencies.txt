@@ -1,0 +1,4 @@
+aiohttp==3.13.0
+rapidfuzz==3.14.1
+asqlite==2.0.0
+asyncpg==0.31.0
