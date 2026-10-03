@@ -674,8 +674,11 @@ async def test_removing_own_listener_keeps_ownership_until_acknowledgement(
         await drive_until(stores.clock, completed.is_set)
         await wait_count(stores.left, 0)
         assert not client.last_delivery_errors
-        await advance(stores.clock, 15)
         assert client._coordinator is not None
+        await drive_until(
+            stores.clock,
+            lambda: not client._coordinator.owns("subscription:remove.self"),
+        )
         assert not client._coordinator.owns("subscription:remove.self")
     finally:
         await client.close()
