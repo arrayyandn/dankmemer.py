@@ -289,16 +289,19 @@ class EventClient:
             self._automatic_request, CHANGELOGS, parse_changelog, clock=clock
         )
         self._readers = (blogs, changelogs)
+        tolerance = config.timestamp_tolerance
         self._sources: dict[PollingResource, Source] = {
             PollingResource.DROPS: SnapshotSource(
                 self._drops,
                 self._observer(PollingResource.DROPS, drop_changes, drops_codec()),
+                tolerance=tolerance,
             ),
             PollingResource.STORE_SALES: SnapshotSource(
                 self._sales,
                 self._observer(
                     PollingResource.STORE_SALES, sale_changes, sales_codec()
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.FISHING_EVENTS: SnapshotSource(
                 self._fishing_events,
@@ -307,6 +310,7 @@ class EventClient:
                     fishing_event_changes,
                     fishing_events_codec(),
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.STORE_DAILY_GIFTS: SnapshotSource(
                 self._gifts,
@@ -320,6 +324,7 @@ class EventClient:
                 timestamp=lambda values: max(
                     (gift.day.timestamp() for gift in values), default=None
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.STREAM_TRENDING_GAME: SnapshotSource(
                 self._trending,
@@ -331,12 +336,14 @@ class EventClient:
                 ),
                 allowed=trending_allowed,
                 timestamp=lambda value: value.day.timestamp(),
+                tolerance=tolerance,
             ),
             PollingResource.GLOBAL_BOOSTS: SnapshotSource(
                 self._boosts,
                 self._observer(
                     PollingResource.GLOBAL_BOOSTS, boost_changes, boosts_codec()
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.LOTTERY: SnapshotSource[LotteryResult | None](
                 self._lottery,
@@ -350,6 +357,7 @@ class EventClient:
                 timestamp=lambda value: (
                     None if value is None else value.drawn_at.timestamp()
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.MERCHANT_TRADES: SnapshotSource[MerchantRotation | None](
                 self._merchant,
@@ -363,6 +371,7 @@ class EventClient:
                 timestamp=lambda value: (
                     None if value is None else value.date.timestamp()
                 ),
+                tolerance=tolerance,
             ),
             PollingResource.BLOGS: PublicationSource(
                 blogs,

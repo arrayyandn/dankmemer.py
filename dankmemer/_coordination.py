@@ -238,6 +238,7 @@ class Coordinator:
                 "max_pending": events.max_pending_deliveries,
                 "publication_page_size": events.publication_page_size,
                 "max_staged": events.max_staged_publications,
+                "timestamp_tolerance": events.timestamp_tolerance.total_seconds(),
             },
             sort_keys=True,
         )

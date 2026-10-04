@@ -38,6 +38,21 @@ def _optional_positive(value: object | None, name: str) -> None:
         _number(value, name, minimum=0, strict=True)
 
 
+# Polls are at least a minute apart, so a larger tolerance could hide updates.
+_MAX_TIMESTAMP_TOLERANCE = timedelta(minutes=1)
+
+
+def _timestamp_tolerance(value: object) -> None:
+    if (
+        not isinstance(value, timedelta)
+        or value < timedelta(0)
+        or value > _MAX_TIMESTAMP_TOLERANCE
+    ):
+        raise ConfigurationError(
+            "timestamp_tolerance must be a timedelta from zero to one minute"
+        )
+
+
 def _positive_timedelta(value: object) -> None:
     if not isinstance(value, timedelta) or value <= timedelta(0):
         raise ConfigurationError("cache ttl must be a positive timedelta")
@@ -353,6 +368,13 @@ class EventConfig:
     pages. Exceeding a bound raises an error without advancing that checkpoint.
     These bound pending work and recovery memory, not API quotas or history.
 
+    ``timestamp_tolerance`` is the largest difference between a polled
+    timestamp and its saved value that is not reported as a change. Some
+    timestamps, such as a global boost's end, are derived per request and vary
+    by a millisecond between identical responses. A timestamp within the
+    tolerance keeps its saved value, so slow drift is still measured from the
+    baseline. The default is one second; ``timedelta(0)`` compares exactly.
+
     ``BEST_EFFORT`` uses an in-memory store and discards pending calls on close.
     Callback failures are logged and that call is not retried. ``DURABLE``
     requires a persistent ``event_store`` on the client. Failed calls pause
@@ -368,6 +390,7 @@ class EventConfig:
     max_pending_deliveries: int = 1_000
     publication_page_size: int = 100
     max_staged_publications: int = 1_000
+    timestamp_tolerance: timedelta = timedelta(seconds=1)
 
     def __post_init__(self) -> None:
         _event_delivery(self.delivery)
@@ -382,6 +405,7 @@ class EventConfig:
             raise ConfigurationError(
                 "max_staged_publications must hold at least one publication page"
             )
+        _timestamp_tolerance(self.timestamp_tolerance)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

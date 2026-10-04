@@ -139,6 +139,15 @@ incomplete response keeps that previous state, so a broken response cannot
 appear as every record ending. Internal storage calls this accepted state
 a baseline and calls one complete parsed read an observation.
 
+Timestamps are compared with a tolerance. Some are derived per request; a
+global boost's end time, for example, can differ by a millisecond between
+otherwise identical responses. A timestamp within
+``EventConfig.timestamp_tolerance`` (one second by default) of its saved value
+keeps that value, so it is not reported as a change. Slow drift is still
+measured from the baseline rather than from the previous read. Set
+``timestamp_tolerance=timedelta(0)`` to compare timestamps exactly; the
+maximum is one minute.
+
 The API's 15-second response cache is a freshness duration, not event retention.
 Drops, boosts, sales, and fishing events expose active records only; merchant
 trades expose today's rotation, and lottery exposes the latest completed

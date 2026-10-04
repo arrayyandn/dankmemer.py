@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Generic, Protocol, TypeVar
 
 from ._observations import Emission, Observation
+from ._settle import settle
 from .config import EventConfig
 from .errors import EventRecoveryError
 from .models.activities import GlobalBoost, LotteryResult, MerchantRotation
@@ -45,8 +47,10 @@ class SnapshotSource(Generic[_T]):
         *,
         allowed: Callable[[_T, _T], bool] | None = None,
         timestamp: Callable[[_T], float | None] | None = None,
+        tolerance: timedelta = timedelta(0),
     ) -> None:
         self._load = load
+        self._tolerance = tolerance
         self._allowed = allowed
         self._timestamp = timestamp
         self._stream: Observer[_T] = observer
@@ -70,6 +74,9 @@ class SnapshotSource(Generic[_T]):
         if self._pending is None:
             value = await self._load()
             current = self._stream.current
+            if current is not None:
+                # Keep baseline timestamps for request-derived jitter.
+                value = settle(current.value, value, self._tolerance)
             if (
                 current is not None
                 and self._allowed is not None

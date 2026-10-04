@@ -1,6 +1,7 @@
 # pyright: reportPrivateUsage=false
 
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Generic, TypeVar
 
@@ -9,8 +10,10 @@ from resource_helpers import Responses, blogs
 
 from dankmemer import (
     Blog,
+    ConfigurationError,
     EventConfig,
     EventRecoveryError,
+    GlobalBoost,
     LotteryResult,
     MerchantRotation,
 )
@@ -18,12 +21,14 @@ from dankmemer._event_sources import (
     PublicationSource,
     PublicationState,
     SnapshotSource,
+    boost_changes,
     lottery_allowed,
     lottery_changes,
     merchant_allowed,
     merchant_changes,
     publication_changes,
 )
+from dankmemer._live_events import drop_changes
 from dankmemer._observations import Emission, Observation, prepare_observation
 from dankmemer.http._routes import BLOGS
 from dankmemer.models.publications import parse_blog
@@ -368,3 +373,141 @@ async def test_empty_initial_publication_collection_recovers_all_new_entries() -
         assert published_ids(publisher) == ["1", "2", "3"]
     finally:
         await source._reader._close()
+
+
+BOOST_END = datetime(2026, 10, 4, 1, 3, 37, 810000, tzinfo=UTC)
+
+
+def boost(ends_at: datetime = BOOST_END, *, multiplier: float = 2.25) -> GlobalBoost:
+    return GlobalBoost("xp", multiplier, ends_at)
+
+
+def snapshots(*values: _T) -> Callable[[], Awaitable[_T]]:
+    remaining = list(values)
+
+    async def load() -> _T:
+        return remaining.pop(0)
+
+    return load
+
+
+@pytest.mark.asyncio
+async def test_millisecond_timestamp_jitter_is_not_a_change() -> None:
+    jittered = BOOST_END + timedelta(milliseconds=1)
+    extended = BOOST_END + timedelta(minutes=5)
+    publisher = Publisher[tuple[GlobalBoost, ...]](boost_changes, emit_initial=True)
+    source = SnapshotSource(
+        snapshots(
+            (boost(),),
+            (boost(jittered),),
+            (boost(),),
+            (boost(jittered),),
+            (boost(extended),),
+        ),
+        publisher,
+        tolerance=timedelta(seconds=1),
+    )
+    for _ in range(5):
+        await source.poll()
+    assert publisher.batches == [
+        (Emission("global_boosts_changed", ((), (boost(),))),),
+        (Emission("global_boosts_changed", ((boost(),), (boost(extended),))),),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_settled_timestamps_measure_drift_from_the_baseline() -> None:
+    step = timedelta(milliseconds=600)
+    publisher = Publisher[tuple[GlobalBoost, ...]](boost_changes)
+    source = SnapshotSource(
+        snapshots(
+            (boost(),), (boost(BOOST_END + step),), (boost(BOOST_END + 2 * step),)
+        ),
+        publisher,
+        tolerance=timedelta(seconds=1),
+    )
+    for _ in range(3):
+        await source.poll()
+    assert publisher.batches == [
+        (
+            Emission(
+                "global_boosts_changed",
+                ((boost(),), (boost(BOOST_END + 2 * step),)),
+            ),
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_settling_keeps_other_field_changes() -> None:
+    jittered = BOOST_END + timedelta(milliseconds=1)
+    publisher = Publisher[tuple[GlobalBoost, ...]](boost_changes)
+    source = SnapshotSource(
+        snapshots((boost(),), (boost(jittered, multiplier=3.0),)),
+        publisher,
+        tolerance=timedelta(seconds=1),
+    )
+    await source.poll()
+    await source.poll()
+    # The multiplier changed; the end time keeps its saved value.
+    assert publisher.batches == [
+        (
+            Emission(
+                "global_boosts_changed",
+                ((boost(),), (boost(multiplier=3.0),)),
+            ),
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_zero_tolerance_compares_timestamps_exactly() -> None:
+    jittered = BOOST_END + timedelta(milliseconds=1)
+    publisher = Publisher[tuple[GlobalBoost, ...]](boost_changes)
+    source = SnapshotSource(snapshots((boost(),), (boost(jittered),)), publisher)
+    await source.poll()
+    await source.poll()
+    assert publisher.batches == [
+        (Emission("global_boosts_changed", ((boost(),), (boost(jittered),))),),
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class Period:
+    id: int
+    ends_at: datetime
+
+
+@pytest.mark.asyncio
+async def test_collections_settle_entries_by_id() -> None:
+    first = Period(1, BOOST_END)
+    second = Period(2, BOOST_END + timedelta(hours=1))
+    publisher = Publisher[tuple[Period, ...]](drop_changes)  # type: ignore[arg-type]
+    source = SnapshotSource(
+        snapshots(
+            (first,),
+            (Period(1, BOOST_END + timedelta(milliseconds=1)), second),
+        ),
+        publisher,
+        tolerance=timedelta(seconds=1),
+    )
+    await source.poll()
+    await source.poll()
+    assert publisher.batches == [
+        (
+            Emission("drops_changed", ((first,), (first, second))),
+            Emission("drop_started", (second,)),
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "tolerance", [timedelta(seconds=-1), timedelta(minutes=2), 1.0]
+)
+def test_timestamp_tolerance_is_validated(tolerance: object) -> None:
+    with pytest.raises(ConfigurationError, match="timestamp_tolerance"):
+        EventConfig(timestamp_tolerance=tolerance)  # type: ignore[arg-type]
+
+
+def test_timestamp_tolerance_defaults_to_one_second() -> None:
+    assert EventConfig().timestamp_tolerance == timedelta(seconds=1)
