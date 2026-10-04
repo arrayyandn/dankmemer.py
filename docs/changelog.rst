@@ -7,7 +7,7 @@ Release notes
 * Fixed repeated ``global_boosts_changed`` events for unchanged boosts. The API
   derives ``endsAt`` per request, so it varies by a millisecond between polls.
   Snapshot events now treat timestamps within
-  :attr:`EventConfig.timestamp_tolerance` of their saved value as unchanged.
+  ``EventConfig.timestamp_tolerance`` of their saved value as unchanged.
   The default is one second; ``timedelta(0)`` restores exact comparison.
   Shared coordination includes the tolerance in its settings check.
 
