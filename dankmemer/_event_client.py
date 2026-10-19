@@ -794,7 +794,8 @@ class EventClient:
         ):
             return 60.0
         if isinstance(policy, IntervalPolling):
-            return policy.interval.total_seconds()
+            interval = policy.interval.total_seconds()
+            return min(60.0, interval) if resource in self._errors else interval
         return calendar_delay(policy, epoch, source.observed_at)
 
     @property

@@ -21,7 +21,7 @@ class SharedAdmission(Protocol):
         deadline: float | None,
     ) -> None: ...
     async def observe(self, headers: Mapping[str, str]) -> None: ...
-    async def cooldown(self, seconds: float) -> None: ...
+    async def cooldown(self, seconds: float, *, rate_limit: bool = False) -> None: ...
 
 
 class Admission(RequestBudget):
@@ -87,10 +87,10 @@ class Admission(RequestBudget):
         async with self._lock:
             self.update_headers(self._clock.time(), headers)
 
-    async def cooldown(self, seconds: float) -> None:
+    async def cooldown(self, seconds: float, *, rate_limit: bool = False) -> None:
         """Delay subsequent requests after a rate-limit or service error."""
         if self.shared is not None:
-            await self.shared.cooldown(seconds)
+            await self.shared.cooldown(seconds, rate_limit=rate_limit)
             return
         async with self._lock:
-            self.delay(self._clock.monotonic() + seconds)
+            self.delay(self._clock.monotonic() + seconds, rate_limit=rate_limit)

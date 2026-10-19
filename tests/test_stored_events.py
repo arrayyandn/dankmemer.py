@@ -106,6 +106,28 @@ async def test_complete_observations_commit_and_deliver_without_blocking_poll() 
         await pipeline.close()
 
 
+@pytest.mark.asyncio
+async def test_unchanged_value_persists_new_revision_across_restart() -> None:
+    store = MemoryEventStore()
+    pipeline = _pipeline(store)
+    await pipeline.start()
+    try:
+        assert await pipeline.accept(Observation(frozenset({"a"}), True, 1))
+        assert await pipeline.accept(Observation(frozenset({"a"}), True, 3))
+        checkpoint = await store.read_checkpoint(PollingResource.DROPS)
+        assert checkpoint is not None and checkpoint.revision == 3
+    finally:
+        await pipeline.close()
+
+    restarted = _pipeline(store)
+    await restarted.start()
+    try:
+        assert not await restarted.accept(Observation(frozenset({"a"}), True, 2))
+        assert restarted.current is not None and restarted.current.revision == 3
+    finally:
+        await restarted.close()
+
+
 def test_observation_rejects_runtime_invalid_flags() -> None:
     with pytest.raises(ConfigurationError, match="completeness"):
         Observation(1, complete=cast(bool, 1))

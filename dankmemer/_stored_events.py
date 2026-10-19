@@ -274,6 +274,13 @@ class StoredEventPipeline(Generic[_T]):
                 )
                 if emissions is None:
                     return False
+                if (
+                    self._current is not None
+                    and not emissions
+                    and observation.value == self._current.value
+                ):
+                    if observation.revision == self._current.revision:
+                        return True
 
                 payload = self._codec.encode_snapshot(observation.value)
                 intents: list[CallbackIntent] = []

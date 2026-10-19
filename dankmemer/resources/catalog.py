@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from dankmemer._clock import Clock
 from dankmemer.config import CachePolicy
@@ -69,7 +69,7 @@ class Items(CatalogResource[Item, int]):
         *,
         name: str | None = None,
         type: str | None = None,
-        tags: tuple[str, ...] | None = None,
+        tags: Iterable[str] | None = None,
         min_value: int | None = None,
         max_value: int | None = None,
         min_sell_value: int | None = None,
@@ -87,7 +87,7 @@ class Items(CatalogResource[Item, int]):
         """
         name = optional_text(name, "name")
         item_type = optional_text(type, "type")
-        required_tags = normalised_tags(tags)
+        required_tags = set(normalised_tags(tags))
         integer_range(min_value, max_value, "value")
         integer_range(min_sell_value, max_sell_value, "sell_value")
         integer_range(min_market_value, max_market_value, "market_value")
@@ -95,10 +95,7 @@ class Items(CatalogResource[Item, int]):
             lambda item: (
                 (name is None or normalise(item.name) == name)
                 and (item_type is None or normalise(item.type) == item_type)
-                and all(
-                    tag in {normalise(value) for value in item.tags}
-                    for tag in required_tags
-                )
+                and required_tags <= {normalise(value) for value in item.tags}
                 and within(item.value, min_value, max_value)
                 and within(item.sell_value, min_sell_value, max_sell_value)
                 and within(item.market_value, min_market_value, max_market_value)

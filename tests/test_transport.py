@@ -433,6 +433,32 @@ async def test_cooldown_expiry_does_not_release_a_request_burst() -> None:
     assert attempt_times == [120, 121, 122]
 
 
+@pytest.mark.asyncio
+async def test_server_cooldown_deadline_is_timeout_not_rate_limit() -> None:
+    gate = Admission(FakeClock())
+    await gate.cooldown(120)
+    with pytest.raises(DankMemerTimeoutError):
+        await gate.acquire(
+            path="/items",
+            resource=None,
+            automatic=False,
+            deadline=30,
+        )
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_cooldown_deadline_remains_rate_limited() -> None:
+    gate = Admission(FakeClock())
+    await gate.cooldown(120, rate_limit=True)
+    with pytest.raises(RateLimited):
+        await gate.acquire(
+            path="/items",
+            resource=None,
+            automatic=False,
+            deadline=30,
+        )
+
+
 def test_retry_after_supports_http_dates_and_rejects_invalid_values() -> None:
     assert _retry_after("120", now=0) == 120
     assert _retry_after("Thu, 01 Jan 1970 00:02:00 GMT", now=0) == 120

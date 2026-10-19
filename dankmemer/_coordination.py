@@ -761,8 +761,10 @@ class Coordinator:
 
         await self._update(observe)
 
-    async def cooldown(self, seconds: float) -> None:
-        await self._update(lambda state, now: state.budget.delay(now + seconds))
+    async def cooldown(self, seconds: float, *, rate_limit: bool = False) -> None:
+        await self._update(
+            lambda state, now: state.budget.delay(now + seconds, rate_limit=rate_limit)
+        )
 
     async def close(self, *, caller: asyncio.Task[object] | None = None) -> None:
         if self._close_task is not None:

@@ -196,6 +196,8 @@ class Transport:
         safe_path: str,
         timeout_seconds: float | None,
     ) -> _Response:
+        if self._session.closed:
+            raise LifecycleError("supplied session is closed")
         timeout = aiohttp.ClientTimeout(total=timeout_seconds)
         # Do not follow redirects when sending the developer token.
         async with self._session.get(
@@ -302,27 +304,30 @@ class Transport:
                 )
 
             network_error: DankMemerConnectionError | None = None
+            network_cause: Exception | None = None
             response: _Response | None = None
             try:
                 response = await self._attempt(path, query, safe_path, attempt_timeout)
-            except TimeoutError:
+            except TimeoutError as exc:
                 network_error = DankMemerTimeoutError(
                     "request timed out", path=safe_path
                 )
-            except aiohttp.ClientError:
+                network_cause = exc
+            except aiohttp.ClientError as exc:
                 network_error = DankMemerConnectionError(
                     "connection to official API failed", path=safe_path
                 )
+                network_cause = exc
 
             if network_error is not None:
                 if index + 1 == self._retry.max_attempts:
-                    raise network_error
+                    raise network_error from network_cause
                 delay = self._backoff(index, service_unavailable=False)
                 if (
                     deadline is not None
                     and self._admission.clock.monotonic() + delay >= deadline
                 ):
-                    raise network_error
+                    raise network_error from network_cause
                 await self._admission.clock.sleep(delay)
                 continue
 
@@ -336,7 +341,7 @@ class Transport:
             delay = self._backoff(index, service_unavailable=response.status == 503)
             if response.status in (429, 503):
                 delay = max(delay, response.retry_after or 0.0)
-                await self._admission.cooldown(delay)
+                await self._admission.cooldown(delay, rate_limit=response.status == 429)
             if not retryable or index + 1 == self._retry.max_attempts:
                 raise error
             if (

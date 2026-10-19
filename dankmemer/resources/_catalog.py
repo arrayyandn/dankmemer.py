@@ -35,6 +35,8 @@ class _Catalog(Generic[_T]):
     ids: Mapping[int | str, _T]
     names: Mapping[str, tuple[_T, ...]]
     keys: Mapping[str, tuple[_T, ...]]
+    normalized_names: tuple[str, ...]
+    sorted_items: tuple[_T, ...]
 
 
 class CatalogResource(PaginatedResource[_T], Generic[_T, _ID]):
@@ -106,6 +108,7 @@ class CatalogResource(PaginatedResource[_T], Generic[_T, _ID]):
         ids: dict[int | str, _T] = {}
         names: dict[str, list[_T]] = {}
         keys: dict[str, list[_T]] = {}
+        normalized_names: list[str] = []
         seen: set[int | str] = set()
         cursor = 0
         while True:
@@ -123,17 +126,28 @@ class CatalogResource(PaginatedResource[_T], Generic[_T, _ID]):
                 if item.id is not None:
                     ids[item.id] = item
                 items.append(item)
-                names.setdefault(normalise(item.name), []).append(item)
+                item_name = normalise(item.name)
+                normalized_names.append(item_name)
+                names.setdefault(item_name, []).append(item)
                 if self._key is not None:
                     keys.setdefault(self._key(item), []).append(item)
             if page.next_cursor is None:
                 break
             cursor = page.next_cursor
+        catalog_items = tuple(items)
         return _Catalog(
-            tuple(items),
+            catalog_items,
             MappingProxyType(ids),
             MappingProxyType({name: tuple(matches) for name, matches in names.items()}),
             MappingProxyType({key: tuple(matches) for key, matches in keys.items()}),
+            tuple(normalized_names),
+            tuple(
+                item
+                for _, item in sorted(
+                    zip(normalized_names, catalog_items, strict=True),
+                    key=lambda pair: pair[0],
+                )
+            ),
         )
 
     def _unique(self, matches: tuple[_T, ...], name: str) -> _T | None:
@@ -256,9 +270,7 @@ class CatalogResource(PaginatedResource[_T], Generic[_T, _ID]):
         if snapshot is None:
             return ()
         if not normalized:
-            return tuple(sorted(snapshot.items, key=lambda item: normalise(item.name)))[
-                :25
-            ]
+            return snapshot.sorted_items[:25]
         return rank(
             snapshot.items,
             normalized,
@@ -266,4 +278,5 @@ class CatalogResource(PaginatedResource[_T], Generic[_T, _ID]):
             fuzzy=fuzzy,
             min_score=70.0,
             max_limit=25,
+            normalized_names=snapshot.normalized_names,
         )
